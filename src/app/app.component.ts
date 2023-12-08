@@ -35,7 +35,6 @@ import { MatButtonModule } from '@angular/material/button';
       <span>{{ title }}</span>
       <nav class="navigation">
         <button mat-button color="primary" routerLink="/">Home</button>
-        <button mat-button color="primary" routerLink="/about">About</button>
       </nav>
     </mat-toolbar>
     <section class="content">

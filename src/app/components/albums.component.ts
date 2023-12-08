@@ -23,19 +23,20 @@ import { MatButtonModule } from '@angular/material/button';
     padding-bottom: 1rem;
   }`,
   template: `
-    <mat-grid-list [cols]="breakpoint" (window:resize)="onResize($event)">
+    <mat-grid-list [cols]="breakpoint" rowHeight="320px" (window:resize)="onResize($event)">
       @for (post of posts; track post.id) {
       <mat-grid-tile>
         <mat-card [routerLink]="'/album/' + post.slug" class="card">
           <img
             mat-card-image
             [ngSrc]="
-              'https://images.wannabes.be/S=W1600,H1600,PD2/' +
+              'https://images.wannabes.be/S=W300,H200,PD2/' +
               post.thumbnail.hires
             "
             [alt]="post.artist.name"
             width="300"
             height="200"
+            priority
           />
           <mat-card-header class="card-header">
             <mat-card-title>{{ post.artist.name }}</mat-card-title>
