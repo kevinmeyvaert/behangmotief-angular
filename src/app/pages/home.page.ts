@@ -10,7 +10,6 @@ import { AlbumsComponent } from '../components/albums.component';
   standalone: true,
   imports: [SearchFormComponent, AlbumsComponent],
   template: `
-    <h1>Homepage</h1>
     <search-form (submitSearchResultEvent)="handleSearch($event)" />
     @if (loading) { Loading... } @else { <albums [posts]="posts" /> }
   `,
