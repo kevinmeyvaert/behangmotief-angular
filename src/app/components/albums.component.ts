@@ -1,9 +1,10 @@
-import { NgOptimizedImage } from '@angular/common';
+import { AsyncPipe, NgOptimizedImage } from '@angular/common';
 import { Component, Input } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatGridListModule } from '@angular/material/grid-list';
 import { MatButtonModule } from '@angular/material/button';
+import { fromEvent, map, startWith } from 'rxjs';
 
 @Component({
   selector: 'albums',
@@ -14,6 +15,7 @@ import { MatButtonModule } from '@angular/material/button';
     MatCardModule,
     MatGridListModule,
     MatButtonModule,
+    AsyncPipe,
   ],
   styles: `
   .card {
@@ -23,7 +25,7 @@ import { MatButtonModule } from '@angular/material/button';
     padding-bottom: 1rem;
   }`,
   template: `
-    <mat-grid-list [cols]="breakpoint" rowHeight="320px" (window:resize)="onResize($event)">
+    <mat-grid-list [cols]="breakpoint$ | async" rowHeight="320px">
       @for (post of posts; track post.id) {
       <mat-grid-tile>
         <mat-card [routerLink]="'/album/' + post.slug" class="card">
@@ -51,7 +53,10 @@ import { MatButtonModule } from '@angular/material/button';
 export class AlbumsComponent {
   @Input() posts: any[] = [];
 
-  breakpoint = 4;
+  breakpoint$ = fromEvent(window, 'resize').pipe(
+    map(() => this.handleResize(window.innerWidth)),
+    startWith(this.handleResize(window.innerWidth)),
+  );
 
   private handleResize(windowWidth: number) {
     switch (true) {
@@ -64,13 +69,5 @@ export class AlbumsComponent {
       default:
         return 4;
     }
-  }
-
-  ngOnInit() {
-    this.breakpoint = this.handleResize(window.innerWidth);
-  }
-  
-  onResize(event: any) {
-    this.breakpoint = this.handleResize(window.innerWidth);
   }
 }
