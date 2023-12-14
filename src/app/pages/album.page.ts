@@ -1,6 +1,7 @@
 import { Component, Input, inject } from '@angular/core';
-import { Apollo, QueryRef } from 'apollo-angular';
-import { Subscription } from 'rxjs';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { Apollo } from 'apollo-angular';
+import { BehaviorSubject, filter, from, map, of, switchMap, tap } from 'rxjs';
 import { ALBUM_QUERY } from '../queries/wannabes.queries';
 import { NgOptimizedImage } from '@angular/common';
 
@@ -23,10 +24,10 @@ import { NgOptimizedImage } from '@angular/common';
     justify-items: center;
   }
   `,
-  template: ` @if (loading) { Loading... } @else {
+  template: ` @if (loading()) { Loading... } @else {
     <section class="photos">
-      <h1>{{ album.artist.name }} - {{ album.venue.name }}</h1>
-      @for (photo of album.images; track photo.blurhash; let index = $index) {
+      <h1>{{ album().artist.name }} - {{ album().venue.name }}</h1>
+      @for (photo of album().images; track photo.blurhash; let index = $index) {
       <img
         [src]="'https://images.wannabes.be/S=W1600,H1600,PD2/' + photo.hires"
       />
@@ -35,30 +36,21 @@ import { NgOptimizedImage } from '@angular/common';
     }`,
 })
 export class AlbumPageComponent {
-  @Input() slug?: string[];
+  private apolloClient = inject(Apollo);
 
-  apolloClient = inject(Apollo);
-  querySubscription: Subscription;
-  albumQuery: QueryRef<any>;
+  @Input()
+  private set slug(slug: string[] | undefined) {
+    this.slug$.next(slug ?? []);
+  }
+  private slug$ = new BehaviorSubject<string[]>([]);
 
-  loading = false;
-  album: any;
-
-  ngOnInit() {
-    this.albumQuery = this.apolloClient.watchQuery<any>({
+  private albumQuery = this.slug$.pipe(
+    filter((slug) => slug.length > 0),
+    switchMap((slug) => this.apolloClient.watchQuery<any>({
       query: ALBUM_QUERY,
-      variables: { slug: this.slug?.join('/') },
-    });
+      variables: { slug: slug.join('/') },
+    }).valueChanges));
 
-    this.querySubscription = this.albumQuery.valueChanges.subscribe(
-      ({ data, loading }) => {
-        this.loading = loading;
-        this.album = data.post;
-      }
-    );
-  }
-
-  ngOnDestroy() {
-    this.querySubscription.unsubscribe();
-  }
+  loading = toSignal(this.albumQuery.pipe(map(({ loading }) => loading)), { initialValue: true });
+  album = toSignal(this.albumQuery.pipe(map(({ data }) => data.post)), { initialValue: {} });
 }

@@ -1,43 +1,33 @@
 import { Component, inject } from '@angular/core';
 import { SearchFormComponent } from '../components/searchform.component';
-import { Apollo, QueryRef } from 'apollo-angular';
+import { Apollo } from 'apollo-angular';
 import { SEARCH_QUERY } from '../queries/wannabes.queries';
-import { Subscription } from 'rxjs';
+import { map } from 'rxjs';
 import { AlbumsComponent } from '../components/albums.component';
+import { AsyncPipe } from '@angular/common';
 
 @Component({
   selector: 'home-page',
   standalone: true,
-  imports: [SearchFormComponent, AlbumsComponent],
+  imports: [SearchFormComponent, AlbumsComponent, AsyncPipe],
   template: `
     <search-form (submitSearchResultEvent)="handleSearch($event)" />
-    @if (loading) { Loading... } @else { <albums [posts]="posts" /> }
+    @if (loading$ | async) { Loading... } @else { <albums [posts]="posts$ | async" /> }
   `,
 })
 export class HomePageComponent {
-  apolloClient = inject(Apollo);
-  querySubscription: Subscription;
-  postsQuery: QueryRef<any>;
+  private apolloClient = inject(Apollo);
+  private postsQuery = this.apolloClient.watchQuery<any>({
+    query: SEARCH_QUERY,
+  });
 
-  loading = false;
-  posts: any;
+  loading$ = this.postsQuery.valueChanges.pipe(
+    map(({loading}) => loading)
+  );
 
-  ngOnInit() {
-    this.postsQuery = this.apolloClient.watchQuery<any>({
-      query: SEARCH_QUERY,
-    });
-
-    this.querySubscription = this.postsQuery.valueChanges.subscribe(
-      ({ data, loading }) => {
-        this.loading = loading;
-        this.posts = data.posts.data;
-      }
-    );
-  }
-
-  ngOnDestroy() {
-    this.querySubscription.unsubscribe();
-  }
+  posts$ = this.postsQuery.valueChanges.pipe(
+    map(({data}) => data.posts.data)
+  );
 
   handleSearch(item: string) {
     this.postsQuery.refetch({ all: item });
